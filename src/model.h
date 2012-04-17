@@ -478,7 +478,9 @@ public:
 	double *t;
 	int n_t;
 	
+    bool exact_stationary_solution_possible;
 	virtual N_vector dN(double _t, const N_vector & _N) = 0;
+    virtual N_vector N_stationary() = 0;
 
 	typename Grid<r_nodes, phi_nodes>::Values W_val[n_level][n_level];
 	const typename Grid<r_nodes, phi_nodes>::Values &W(int i, int j) const	{ return W_val[i][j]; }
@@ -543,7 +545,7 @@ public:
 
 template <int n_level, int n_F_mono, int n_B_mono, int n_ASE, int r_nodes, int phi_nodes>
 	ModelEngine< n_level, n_F_mono, n_B_mono, n_ASE, r_nodes, phi_nodes>::ModelEngine()
-		: input_path(""), output_path("")
+		: input_path(""), output_path(""), exact_stationary_solution_possible(false)
 {
 	if ( r_nodes % 2 == 0 || (phi_nodes % 2 == 1 && phi_nodes != 1) )	// evenness check, required for Simpson's rule integration	
 		wait_and_exit("ModelEngine: incorrect grid dimensions");		// r_nodes must be odd, and phi_nodes must be even

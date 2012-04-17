@@ -1,7 +1,7 @@
 #ifndef MODEL_CPP
 #define MODEL_CPP
 
-#define SHOW_CALL_INFO
+//#define SHOW_CALL_INFO
 
 #include "model.h"
 
@@ -16,22 +16,29 @@ template <int n_level, int n_F_mono, int n_B_mono, int n_ASE, int r_nodes, int p
 	B_subsystem::Channel _PB = ODE_interpolate(_z, B.z, B.P, B.dense_coeff, B.n_z);
 	calculate_W_val(PF, _PB);
 
-	t = new double[segment_size];
-	N = new N_vector[segment_size];
-	n_t = 0;
+    if(exact_stationary_solution_possible)
+    {
+        N_previous_step = N_stationary();
+    }
+    else
+    {
+	    t = new double[segment_size];
+	    N = new N_vector[segment_size];
+	    n_t = 0;
 
-	dN_called = 0;
+	    dN_called = 0;
 	
-	ODE_solve_RK45(*this, & ModelEngine::dN, 0, infinity, N_previous_step, n_t,	t, N);
+	    ODE_solve_RK45(*this, & ModelEngine::dN, 0, infinity, N_previous_step, n_t,	t, N);
 	
-	dN_average_called += dN_called;
-	if(dN_max_called < dN_called) dN_max_called = dN_called;
-	if(dN_min_called > dN_called) dN_min_called = dN_called;
+	    dN_average_called += dN_called;
+	    if(dN_max_called < dN_called) dN_max_called = dN_called;
+	    if(dN_min_called > dN_called) dN_min_called = dN_called;
 	
-	N_previous_step = N[n_t - 1];
+	    N_previous_step = N[n_t - 1];
 
-	delete [] t;
-	delete [] N;
+	    delete [] t;
+	    delete [] N;
+    }
 
 	F_subsystem::Channel dPF;
 	for(int k = 0; k < F_subsystem::n_ch; k++)
@@ -74,22 +81,31 @@ template <int n_level, int n_F_mono, int n_B_mono, int n_ASE, int r_nodes, int p
 	F_subsystem::Channel _PF = ODE_interpolate(_z, F.z, F.P, F.dense_coeff, F.n_z);
 	calculate_W_val(_PF, PB);
 
-	t = new double[segment_size];
-	N = new N_vector[segment_size];
-	n_t = 0;
+    if(exact_stationary_solution_possible)
+    {
+        N_previous_step = N_stationary();
+    }
+    else
+    {
+	    t = new double[segment_size];
+	    N = new N_vector[segment_size];
+	    n_t = 0;
 
-	dN_called = 0;
+	    dN_called = 0;
 
-	ODE_solve_RK45(*this, & ModelEngine::dN, 0, infinity, N_previous_step, n_t,	t, N);
-	
-	dN_average_called += dN_called;
-	if(dN_max_called < dN_called) dN_max_called = dN_called;
-	if(dN_min_called > dN_called) dN_min_called = dN_called;	
-	
-	N_previous_step = N[n_t - 1];
+	    ODE_solve_RK45(*this, & ModelEngine::dN, 0, infinity, N_previous_step, n_t,	t, N);
+	    
+	    dN_average_called += dN_called;
+	    if(dN_max_called < dN_called) dN_max_called = dN_called;
+	    if(dN_min_called > dN_called) dN_min_called = dN_called;	
+	    
+	    N_previous_step = N[n_t - 1];
 
-	delete [] t;
-	delete [] N;
+	    delete [] t;
+	    delete [] N;
+    }
+
+    N_previous_step = N_stationary();
 
 	B_subsystem::Channel dPB;
 	for(int k = 0; k < B_subsystem::n_ch; k++)
@@ -207,12 +223,13 @@ bool ModelEngine< n_level, n_F_mono, n_B_mono, n_ASE, r_nodes, phi_nodes>::
 			else
 				F_convergence = false;
 
-			std::cout << "\trelaxation iteration " << iter + 1 << "\tF rel error = " << error / rel_tolerance;
-#ifdef SHOW_CALL_INFO
-			std::cout << "\t\t\tcalls: dPF " << dPF_called << "\tdN_min " << dN_min_called << "\tdN_max " << dN_max_called << "\tdN_average " << dN_average_called / dPF_called << "\n";
-#else
-			std::cout << "\n";
-#endif
+            // output
+//			std::cout << "\trelaxation iteration " << iter + 1 << "\tF rel error = " << error / rel_tolerance;
+//#ifdef SHOW_CALL_INFO
+//            std::cout << "\t\t\tcalls: dPF " << dPF_called << "\tdN_min " << dN_min_called << "\tdN_max " << dN_max_called << "\tdN_average " << dN_average_called / dPF_called << "\n";
+//#else
+//			std::cout << "\n";
+//#endif
 		}
 		
 		F_previous_step = F.P[F.n_z - 1];
@@ -242,12 +259,13 @@ bool ModelEngine< n_level, n_F_mono, n_B_mono, n_ASE, r_nodes, phi_nodes>::
 			else
 				B_convergence = false;
 
-			std::cout << "\t\t\t\tB rel error = " << error / rel_tolerance;
-#ifdef SHOW_CALL_INFO
-			std::cout << "\t\t\tcalls: dPB " << dPB_called << "\tdN_min " << dN_min_called << "\tdN_max " << dN_max_called << "\tdN_average " << dN_average_called / dPB_called << "\n";
-#else
-			std::cout << "\n";
-#endif
+        // output
+//			std::cout << "\t\t\t\tB rel error = " << error / rel_tolerance;
+//#ifdef SHOW_CALL_INFO
+//            std::cout << "\t\t\tcalls: dPB " << dPB_called << "\tdN_min " << dN_min_called << "\tdN_max " << dN_max_called << "\tdN_average " << dN_average_called / dPB_called << "\n";
+//#else
+//			std::cout << "\n";
+//#endif
 		}
 
 		B_previous_step = B.P[B.n_z - 1];

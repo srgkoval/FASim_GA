@@ -17,9 +17,45 @@ template <int F_mono_num, int B_mono_num, int ASE_num> class ThuliumModel: publi
 {
 public:
 	ThuliumModel(): 
-	  ModelEngine<5, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
-		  ModelEngine()	{};	
+	  ModelEngine<5, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::ModelEngine()
+      {
+          exact_stationary_solution_possible = true;
+      }	
 	
+    N_vector N_stationary()
+    {
+		N_vector N;
+
+        double
+			E3 = 1 / 650.e-6,
+			An1 = 1 / 430.e-6,
+			An3 = 1 / (45.e-6),
+//			An5 = 1 / 784.e-6,
+			A31 = E3 * 0.09,
+			A32 = E3 * 0.03,
+			A10 = 1 / 3500.e-6;
+
+        double C10, C11, C13,
+               C30, C31, C33,
+               common_denominator;
+
+		for(int i = 0; i < r_nodes * phi_nodes; i++)
+		{
+            C10 = W(0,1)[i] + W(0,2)[i];        C11 = - (W(1,0)[i] + W(1,3)[i] + W(1,4)[i]) - (An1 + A10);    C13 = W(3,1)[i] + An3 + A31 + A32;
+            C30 = W(0,3)[i];                    C31 = W(1,3)[i] + W(1,4)[i];                              C33 = - (An3 + E3) - (W(3,1)[i] + W(3,0)[i]);
+            common_denominator = 1. / ( C13 * (-C30 + C31) + C11 * (C30 - C33) + C10 * (-C31 + C33) );
+
+            N[1][i] = -1. * (C13 * C30 - C10 * C33) * N_activator * common_denominator;
+            N[2][i] = 0.;
+            N[3][i] = (C11 * C30 - C10 * C31) * N_activator * common_denominator;
+            N[4][i] = 0.;
+            N[0][i] = N_activator - N[1][i] - N[3][i];
+		}
+
+        return N;
+    }
+
+
 	N_vector dN(double z, const N_vector & N)
 	{
 		dN_called++;
@@ -59,6 +95,14 @@ public:
 	  ModelEngine<2, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
 		  ModelEngine()	{};	
 	
+    N_vector N_stationary()
+    {
+		N_vector N;
+        N = 0.;
+        return N;
+    }
+
+
 	N_vector dN(double z, const N_vector & N)
 	{
 		dN_called++;
@@ -83,7 +127,14 @@ public:
 	ErbiumESAModel(): 
 	  ModelEngine<3, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
 		  ModelEngine()	{};	
-	
+
+    N_vector N_stationary()
+    {
+		N_vector N;
+        N = 0.;
+        return N;
+    }
+
 	N_vector dN(double _t, const N_vector & N)
 	{
 		//std::cout << "t = " << _t << "\r";
@@ -113,7 +164,15 @@ public:
 	ErbiumUpconversionModel(): 
 	  ModelEngine<5, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
 		  ModelEngine()	{};	
-	
+
+    N_vector N_stationary()
+    {
+		N_vector N;
+        N = 0.;
+        return N;
+    }
+
+
 	N_vector dN(double z, const N_vector & N)
 	{
 		dN_called++;
