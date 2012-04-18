@@ -2,6 +2,9 @@
 #define ERBIUM_UPCONVERSION
 
 #include "model_specification.h"
+#include "vector.h"
+#include "ga.h"
+#include "fiber.h"
 
 const int n_signal_UC = 50; //50;
 const int n_ASE_UC = 80;

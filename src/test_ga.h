@@ -61,6 +61,32 @@ template <int N> Vector<double, 2> KUR(const typename GA<N, 2>::Individual &x)
     return res;
 }
 
+
+const double KUR_scale_dim1 = 1.e-3,
+             KUR_scale_dim2 = 1.e-1,
+             KUR_scale_dim3 = 1.e3;
+
+template <int N> Vector<double, 2> KUR_scaled(const typename GA<N, 2>::Individual & _x)
+{
+    Vector<double, 2> res;
+    res = 0.;
+
+    GA<N, 2>::Individual x(_x);
+    x[0] *= KUR_scale_dim1;
+    x[1] *= KUR_scale_dim2;
+    x[2] *= KUR_scale_dim3;
+
+    for(int i = 0; i < N; i++)
+    {
+        if(i != N - 1)    
+            res[0] += -10. * exp(-0.2 * sqrt(x[i]*x[i] + x[i+1]*x[i+1]));
+        res[1] += pow(fabs(x[i]), 0.8) + 5. *  sin(pow(x[i], 3));
+    }
+
+    return res;
+}
+
+
 template <int N> Vector<double, 2> ZDT1(const typename GA<N, 2>::Individual &x)
 {
     Vector<double, 2> res;
@@ -148,7 +174,6 @@ template <int N> Vector<double, 2> ZDT6(const typename GA<N, 2>::Individual &x)
 }
 
 
-
 //  test run routines =============================================================================
 
 void run_MATLAB_example()
@@ -172,7 +197,20 @@ void run_KUR()
     upper = 5.;
     
     GA<n,2> kur;
-    kur.run_multiobjective(KUR<3>, lower, upper);
+    kur.run_multiobjective(KUR<n>, lower, upper);
+    kur.output("e:\\Programming - code and etc\\Genetic Algorithm\\Output\\ga.txt"); 
+}
+
+
+void run_KUR_scaled()
+{
+    const int n = 3;
+    Vector<double, n> lower, upper;
+    lower = -5.;    lower[0] /= KUR_scale_dim1; lower[1] /= KUR_scale_dim2; lower[2] /= KUR_scale_dim3;
+    upper = 5.;     upper[0] /= KUR_scale_dim1; upper[1] /= KUR_scale_dim2; upper[2] /= KUR_scale_dim3;
+    
+    GA<n,2> kur;
+    kur.run_multiobjective(KUR_scaled<n>, lower, upper);
     kur.output("e:\\Programming - code and etc\\Genetic Algorithm\\Output\\ga.txt"); 
 }
 

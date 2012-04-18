@@ -62,7 +62,7 @@ public:
         }
         else
         {
-            population_size = 50;
+            population_size = 100;
             max_generations = 250;
         }
 
@@ -90,7 +90,7 @@ public:
         mutation = &GA<N, N_obj>::mutation_adaptive;
 
         verbose = true;
-        output_directory = "e:\\Programming - code and etc\\Genetic Algorithm\\Output\\";
+        output_directory = "e:\\Programming - code and etc\\Genetic Algorithm\\Output\\4\\";
         output_generations_step = 5;
     }
 };

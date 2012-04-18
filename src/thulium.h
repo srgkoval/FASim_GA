@@ -2,19 +2,90 @@
 #define THULIUM_H
 
 #include "model_specification.h"
+#include "vector.h"
+#include "ga.h"
+#include "fiber.h"
+
+const int n_ASE_800 = 30,
+          n_ASE_2000 = 30;
+
+const int n_signal_thulium = 16;
+
+const double N_thulium = 1.56e25;
+const double P_total_thulium = 1.;
+
+template <int F_mono_num, int B_mono_num, int ASE_num, int N_param = 4, int N_obj = 2> class Thulium_ga_wrapper
+{
+public:
+    typedef ThuliumModel<F_mono_num, B_mono_num, ASE_num> TM;
+    TM *tm;
+
+    Thulium_ga_wrapper(TM  * _tm) : tm(_tm) {}
+
+    Vector<double, N_obj> operator()(const typename GA<N_param, N_obj>::Individual &x)
+    {
+        Vector<double, N_obj> res;
+
+        tm->set_fiber_parameters(x[0], N_thulium, fiber_NA, fiber_r, fiber_r_doping / fiber_r);
+        tm->set_boundary("pump1", x[1] * P_total_thulium);
+        tm->set_boundary("pump2", (1. - x[1]) * P_total_thulium);
+        tm->reset_channel("pump1", x[2]);
+        tm->reset_channel("pump2", x[3]);
+        
+        tm->update();
+
+        tm->relaxation();
+
+	    int ch_num = 0;
+	    int *ch_list = new int [F_mono_num];
+	    for(int i = 0; i < tm->F.n_ch; i++)
+		    if( tm->F.type[i] == monochromatic && tm->F.handle[i].find("signal") != string::npos)
+			    ch_list[ch_num++] = i;
+
+		double g_max = -1000., 
+			   g_min = +1000., 
+			   g_average = 0.,
+               g [F_mono_num];
+
+		for(int i = 0; i < ch_num; i++)
+		{
+			g[i] = 10 * log10( tm->F.P[tm->F.n_z - 1][ ch_list[i] ] / tm->F.P[0][ ch_list[i] ] );
+			if (g[i] > g_max)	g_max = g[i];
+			if (g[i] < g_min)	g_min = g[i];
+			g_average += g[i];
+		}
+		g_average /= (double) ch_num;
+			
+		double g_ripple = g_average / (g_max - g_min);
+        
+        delete [] ch_list;
+
+        if(g_average >= 0.)
+        {
+            res[0] = - g_max;
+            res[1] = g_max - g_min;
+        }
+        else
+        {
+            res[0] = 0.;
+            res[1] = 100.;
+        }
+        return res;
+    }
+};
+
 
 void run_thulium()
 {
-	const int n_signal = 16;
-	typedef ThuliumModel<1 + n_signal , 1, 30 + 30> thulium_engine;
+	typedef ThuliumModel<1 + n_signal_thulium , 1, n_ASE_800 + n_ASE_2000> thulium_engine;
 	thulium_engine T;
 
 	T.add_mono_channel(1064., forward, "pump1");
 	T.add_mono_channel(1064., backward, "pump2");
 	//T.add_mono_channel(1470., forward, "signal");
-	T.add_mono_channel(1450., 1525., n_signal, forward, "signal");
-	T.add_ASE_channel(785., 820., 30);
-	T.add_ASE_channel(1400., 2100., 30);
+	T.add_mono_channel(1450., 1490., n_signal_thulium, forward, "signal");
+	T.add_ASE_channel(785., 820., n_ASE_800);
+	T.add_ASE_channel(1400., 2100., n_ASE_2000);
 	
 	T.set_paths("e:\\Programming - code and etc\\Fiber Amplifier Simulation\\!Spectra\\Thulium_input_new\\",
 		"e:\\Programming - code and etc\\Fiber Amplifier Simulation\\!Spectra\\Output\\");
@@ -32,13 +103,26 @@ void run_thulium()
 	T.set_boundary("pump1", 0.0);
 	T.set_boundary("pump2", 1.0);
 
-	T.set_boundary("signal", 1.e-7 / n_signal);
+	T.set_boundary("signal", 1.e-7 / n_signal_thulium);
 	
 	T.set_fiber_parameters(6, 1.56e25, 0.30, 1.3e-6, 1.3e-6 / 1.3e-6);
 	T.update();
 
-	T.relaxation();
-	T.output(0, dB);
+/*	T.relaxation();
+	T.output(0, dB)*/;
+
+    // run GA -------------------------------------------------------------------------------------
+    const int n_o = 2,
+              n_p = 4;
+
+    Thulium_ga_wrapper<1 + n_signal_thulium, 1, n_ASE_800 + n_ASE_2000, n_p, n_o> thulium_ga_wrapper(&T);
+
+    Vector<double, n_p> lower(2., 0., 720., 1010.), upper(20., 1., 850., 1080.);
+    
+    GA<n_p, n_o> ga;
+    ga.run_multiobjective(thulium_ga_wrapper, lower, upper);
+
+    // end GA -------------------------------------------------------------------------------------
 	
     //int n = T.F.n_z;
 	//double *x = new double [n],

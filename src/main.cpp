@@ -28,6 +28,7 @@ void main()
 	//run_erbium_upconversion_optim();
 	
     //run_KUR();
+    //run_KUR_scaled();
 
 	finish = clock();
 	std::cout << "\ntimer:\t" << (double (finish - start) / CLOCKS_PER_SEC) << std::endl;
