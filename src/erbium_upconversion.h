@@ -9,6 +9,74 @@
 const int n_signal_UC = 50; //50;
 const int n_ASE_UC = 80;
 const double N_Er = 6.4e26;
+const double P_total_Er = 1.;
+
+template <int F_mono_num, int B_mono_num, int ASE_num, int N_param = 2, int N_obj = 2> class Erbium_UC_ga_wrapper
+{
+public:
+    typedef ErbiumUpconversionModel<F_mono_num, B_mono_num, ASE_num> EM;
+    EM *em;
+
+    Erbium_UC_ga_wrapper(EM  * _em) : em(_em) {}
+
+    Vector<double, N_obj> operator()(const typename GA<N_param, N_obj>::Individual &x)
+    {
+        Vector<double, N_obj> res;
+
+        em->set_fiber_parameters(x[0], N_Er, fiber_NA, fiber_r, fiber_r_doping / fiber_r);
+        em->set_boundary("pump1", x[1] * P_total_Er);
+        em->set_boundary("pump2", (1. - x[1]) * P_total_Er);
+        //em->reset_channel("pump1", x[2]);
+        //em->reset_channel("pump2", x[3]);
+        
+        em->update();
+
+        em->relaxation();
+
+	    int ch_num = 0;
+	    int *ch_list = new int [F_mono_num];
+	    for(int i = 0; i < em->F.n_ch; i++)
+		    if( em->F.type[i] == monochromatic && em->F.handle[i].find("signal") != string::npos)
+			    ch_list[ch_num++] = i;
+
+		double g_max = -1000., 
+			   g_min = +1000., 
+			   g_average = 0.,
+               g [F_mono_num];
+
+		for(int i = 0; i < ch_num; i++)
+		{
+			g[i] = 10 * log10( em->F.P[em->F.n_z - 1][ ch_list[i] ] / em->F.P[0][ ch_list[i] ] );
+			if (g[i] > g_max)	g_max = g[i];
+			if (g[i] < g_min)	g_min = g[i];
+			g_average += g[i];
+		}
+		g_average /= (double) ch_num;
+			
+		double g_ripple = g_average / (g_max - g_min);
+        
+        delete [] ch_list;
+
+        // multiobjective: max gain + gain ripple -------------------------------------------------
+        if(g_average >= 0.)
+        {
+            res[0] = - g_max;
+            res[1] = g_max - g_min;
+        }
+        else
+        {
+            res[0] = 0.;
+            res[1] = 100.;
+        }
+        
+        // single-objective: max gain -------------------------------------------------------------
+        //res = - g_max;
+        
+        
+        return res;
+    }
+};
+
 
 void gain_vs_L_and_P(ErbiumUpconversionModel<1 + 1 + 0, 0, n_ASE_UC> &E)
 {
@@ -337,7 +405,7 @@ void run_erbium_upconversion()
 		"e:\\Programming - code and etc\\Fiber Amplifier Simulation\\!Spectra\\Output\\");
 
 	E.add_mono_channel(980., forward, "pump");
-	E.add_mono_channel(980., backward, "pump2");
+	E.add_mono_channel(1480., backward, "pump2");
 	E.add_mono_channel(537., 560., n_signal_UC, forward, "signal");
 	//E.add_mono_channel(541., forward, "signal");
 	E.add_ASE_channel(1500., 1620., 50);
@@ -356,7 +424,7 @@ void run_erbium_upconversion()
 	E.add_transition(0, 4, "cs04.txt", scale_upper);
 	E.add_transition(4, 0, "cs40.txt", scale_upper);
 	
-	E.set_boundary("pump", 0.e-9);
+	E.set_boundary("pump", 0 * 1.e-3);
 	E.set_boundary("pump2", 100 * 1.e-3);
 	E.set_boundary("signal", 1.e-7 / n_signal_UC);
 

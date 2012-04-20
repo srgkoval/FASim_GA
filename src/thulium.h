@@ -60,6 +60,7 @@ public:
         
         delete [] ch_list;
 
+        // multiobjective: max gain + gain ripple -------------------------------------------------
         if(g_average >= 0.)
         {
             res[0] = - g_max;
@@ -70,6 +71,11 @@ public:
             res[0] = 0.;
             res[1] = 100.;
         }
+        
+        // single-objective: max gain -------------------------------------------------------------
+        //res = - g_max;
+        
+        
         return res;
     }
 };
@@ -77,11 +83,11 @@ public:
 
 void run_thulium()
 {
-	typedef ThuliumModel<1 + n_signal_thulium , 1, n_ASE_800 + n_ASE_2000> thulium_engine;
+	typedef ThuliumModel<1 + 0 + n_signal_thulium , 1, n_ASE_800 + n_ASE_2000> thulium_engine;
 	thulium_engine T;
 
-	T.add_mono_channel(1064., forward, "pump1");
-	T.add_mono_channel(1064., backward, "pump2");
+	T.add_mono_channel(798., forward, "pump1");
+	T.add_mono_channel(1020., backward, "pump2");
 	//T.add_mono_channel(1470., forward, "signal");
 	T.add_mono_channel(1450., 1490., n_signal_thulium, forward, "signal");
 	T.add_ASE_channel(785., 820., n_ASE_800);
@@ -100,30 +106,52 @@ void run_thulium()
 	T.add_transition(3, 1, "cs31.txt", scale);
 
 	// T.set_G("G_factor_Peterka.txt");
-	T.set_boundary("pump1", 0.0);
-	T.set_boundary("pump2", 1.0);
-
-	T.set_boundary("signal", 1.e-7 / n_signal_thulium);
 	
-	T.set_fiber_parameters(6, 1.56e25, 0.30, 1.3e-6, 1.3e-6 / 1.3e-6);
+    double R = 0.25;
+    T.set_boundary("pump1", R * 1.);
+	T.set_boundary("pump2", (1. - R) * 1.);
+
+	T.set_boundary("signal", 1.e-4 / n_signal_thulium);
+	
+	T.set_fiber_parameters(10., N_thulium, fiber_NA, fiber_r, fiber_r_doping / fiber_r);
 	T.update();
 
-/*	T.relaxation();
-	T.output(0, dB)*/;
+	T.relaxation();
+	T.output(0, dB);
 
-    // run GA -------------------------------------------------------------------------------------
-    const int n_o = 2,
-              n_p = 4;
+    // run GA multiobjective-----------------------------------------------------------------------
+    //const int n_o = 2,
+    //          n_p = 4;
 
-    Thulium_ga_wrapper<1 + n_signal_thulium, 1, n_ASE_800 + n_ASE_2000, n_p, n_o> thulium_ga_wrapper(&T);
+    //Thulium_ga_wrapper<1 + 1 + n_signal_thulium, 0, n_ASE_800 + n_ASE_2000, n_p, n_o> thulium_ga_wrapper(&T);
 
-    Vector<double, n_p> lower(2., 0., 720., 1010.), upper(20., 1., 850., 1080.);
-    
-    GA<n_p, n_o> ga;
-    ga.run_multiobjective(thulium_ga_wrapper, lower, upper);
+    //Vector<double, n_p> lower(2., 0., 720., 1000.), upper(20., 1., 850., 1100.);
+    //
+    //GA<n_p, n_o> ga;
+    //ga.run_multiobjective(thulium_ga_wrapper, lower, upper);
 
     // end GA -------------------------------------------------------------------------------------
-	
+
+
+    // run GA single-objective---------------------------------------------------------------------
+    //const int n_o = 2,
+    //          n_p = 4;
+
+    //Thulium_ga_wrapper<1 + 0 + n_signal_thulium, 1, n_ASE_800 + n_ASE_2000, n_p, n_o> thulium_ga_wrapper(&T);
+    //GA<n_p, n_o> ga;
+
+    //Vector<double, n_p> lower(2., 0., 1000., 1350.), upper(20., 1., 1100., 1450.);  // scheme a, b
+    ////Vector<double, n_p> lower(2., 0., 1330., 1450.), upper(20., 1., 1450., 1650.);  // scheme c 
+    ////Vector<double, n_p> lower(2., 0., 720., 1330.), upper(20., 1., 850., 1450.);  // scheme d
+    ////Vector<double, n_p> lower(2., 0., 720., 1000.), upper(20., 1., 850., 1100.);  // scheme e
+    //
+    //ga.options.output_directory = "e:\\Programming - code and etc\\Genetic Algorithm\\Output\\1\\";
+    //ga.run_multiobjective(thulium_ga_wrapper, lower, upper);
+
+    // end GA -------------------------------------------------------------------------------------
+
+
+
     //int n = T.F.n_z;
 	//double *x = new double [n],
 	//	   *y = new double [n];

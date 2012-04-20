@@ -57,7 +57,7 @@ public:
     {
         if(N_obj == 1)
         {
-            population_size = 30;
+            population_size = 100;
             max_generations = 100;
         }
         else

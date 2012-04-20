@@ -493,7 +493,7 @@ public:
 
 	typedef SolutionContainer< n_level, n_F_mono, n_B_mono, n_ASE, r_nodes, phi_nodes> ModelSolution;
 
-	bool relaxation(double abs_tolerance = 1.e-8, double rel_tolerance = 1.e-8, int max_iterations = 100, 
+	bool relaxation(double abs_tolerance = 1.e-8, double rel_tolerance = 1.e-8, int max_iterations = 50, 
 		ModelSolution sol = magic_L);		// see constants.h for magic_L definition	do NEVER use SOL with BIDIRECTIONAL pump
 
 	ModelEngine();

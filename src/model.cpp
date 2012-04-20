@@ -105,8 +105,6 @@ template <int n_level, int n_F_mono, int n_B_mono, int n_ASE, int r_nodes, int p
 	    delete [] N;
     }
 
-    N_previous_step = N_stationary();
-
 	B_subsystem::Channel dPB;
 	for(int k = 0; k < B_subsystem::n_ch; k++)
 	{
@@ -208,7 +206,16 @@ bool ModelEngine< n_level, n_F_mono, n_B_mono, n_ASE, r_nodes, phi_nodes>::
 		dPF_called = dN_average_called = dN_max_called = 0;
 		dN_min_called = 10000000;
 
-		ODE_solve_RK45(*this, &ModelEngine::dPF, 0., L, F.P_boundary, F.n_z, F.z, F.P, 1.e-9, 1.e-9, 1.e-5, &F.dense_coeff);
+        if(iter == 0 && n_B_mono > 0 && fabs(F.P_boundary[0]) < 5.e-3)
+        {
+            F_subsystem::Channel FB = F.P_boundary;
+            FB[0] = 5.e-3;
+		    ODE_solve_RK45(*this, &ModelEngine::dPF, 0., L, FB, F.n_z, F.z, F.P, 1.e-9, 1.e-9, 1.e-5, &F.dense_coeff);
+        }
+        else
+        {
+		    ODE_solve_RK45(*this, &ModelEngine::dPF, 0., L, F.P_boundary, F.n_z, F.z, F.P, 1.e-9, 1.e-9, 1.e-5, &F.dense_coeff);
+        }
 
 		if(max_iterations == 0) break;			// max_iterations == 0 corresponds to 1 forward integration
 

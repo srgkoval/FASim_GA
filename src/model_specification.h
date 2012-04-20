@@ -93,7 +93,10 @@ template <int F_mono_num, int B_mono_num, int ASE_num> class ErbiumModel: public
 public:
 	ErbiumModel(): 
 	  ModelEngine<2, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
-		  ModelEngine()	{};	
+		  ModelEngine()
+      {
+          exact_stationary_solution_possible = false;
+      }
 	
     N_vector N_stationary()
     {
@@ -126,7 +129,10 @@ template <int F_mono_num, int B_mono_num, int ASE_num> class ErbiumESAModel: pub
 public:
 	ErbiumESAModel(): 
 	  ModelEngine<3, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
-		  ModelEngine()	{};	
+		  ModelEngine()
+      {
+          exact_stationary_solution_possible = false;
+      }
 
     N_vector N_stationary()
     {
@@ -163,7 +169,10 @@ template <int F_mono_num, int B_mono_num, int ASE_num> class ErbiumUpconversionM
 public:
 	ErbiumUpconversionModel(): 
 	  ModelEngine<5, F_mono_num, B_mono_num, ASE_num, r_nodes, phi_nodes>::
-		  ModelEngine()	{};	
+		  ModelEngine()
+      {
+          exact_stationary_solution_possible = false;
+      }
 
     N_vector N_stationary()
     {
